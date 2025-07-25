@@ -178,7 +178,7 @@
                     <div class="info-display p-4">
                         <div class="flex items-center space-x-4 mb-3">
                             <div id="channelLogo" class="w-16 h-16 rounded-md overflow-hidden bg-gray-800">
-                                <img src="" alt="Current channel logo or placeholder" class="w-full h-full object-contain" / src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/3a7cac31-1fad-4a3d-a671-61b64bd8ed28.png">
+                                <img src="" alt="Current channel logo or placeholder" class="w-full h-full object-contain" />
                             </div>
                             <div>
                                 <h2 id="channelName" class="text-xl font-bold">No channel selected</h2>
@@ -201,7 +201,6 @@
     </div>
 
     <script>
-        // Database simulation (using localStorage)
         class Database {
             constructor() {
                 if (!localStorage.getItem('users')) {
@@ -242,7 +241,6 @@
             }
         }
 
-        // IPTV Player
         class IptvPlayer {
             constructor() {
                 this.db = new Database();
@@ -256,6 +254,7 @@
                 this.initElements();
                 this.bindEvents();
                 this.checkAuth();
+                this.testM3U8Url();
             }
 
             initElements() {
@@ -363,132 +362,88 @@
                 }
             }
 
+            async testM3U8Url() {
+                try {
+                    const response = await fetch(this.m3u8Url);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch M3U8 URL');
+                    }
+                    const text = await response.text();
+                    if (text.includes('#EXTM3U')) {
+                        console.log('M3U8 URL is valid.');
+                        this.loadChannels();
+                    } else {
+                        throw new Error('Invalid M3U8 content');
+                    }
+                } catch (error) {
+                    console.error('Error testing M3U8 URL:', error);
+                    alert('Failed to load M3U8 URL. Please check the URL.');
+                }
+            }
+
             async loadChannels() {
                 try {
-                    // Fetch and parse M3U8 playlist
                     const response = await fetch(this.m3u8Url);
                     const playlist = await response.text();
-                    
-                    // Parse M3U8 file to extract channels
-                    const lines = playlist.split('\n');
-                    this.channels = [];
-                    
-                    let currentChannel = {};
-                    for (const line of lines) {
-                        if (line.startsWith('#EXTINF')) {
-                            // Parse channel info
-                            const params = line.split(',');
-                            const infoPart = params[0];
-                            const namePart = params.slice(1).join(',');
-                            
-                            // Extract attributes
-                            const duration = infoPart.split(':')[1].split(' ')[0];
-                            const attributes = {};
-                            const attrMatches = infoPart.match(/(\w+)="([^"]+)"/g) || [];
-                            for (const match of attrMatches) {
-                                const [_, key, value] = match.match(/(\w+)="([^"]+)"/);
-                                attributes[key] = value;
-                            }
-                            
-                            currentChannel = {
-                                id: Math.random().toString(36).substr(2, 9),
-                                name: namePart.trim(),
-                                group: attributes.group-title || 'General',
-                                logo: attributes.tvg-logo || 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9023b24c-8572-4c32-81a6-b1ffc5ea149e.png',
-                                description: `Streaming ${namePart.trim()} content.`,
-                                url: '' // Will be set from the next line
-                            };
-                        } else if (line.startsWith('http')) {
-                            // This is the stream URL
-                            currentChannel.url = line.trim();
-                            this.channels.push(currentChannel);
-                            currentChannel = {};
-                        }
-                    }
-                    
-                    // Populate channel list
-                    this.renderChannels();
-                    
-                    // Play first channel if available
-                    if (this.channels.length > 0) {
-                        this.playChannel(this.channels[0]);
-                    }
+                    this.parsePlaylist(playlist);
                 } catch (error) {
                     console.error('Error loading channels:', error);
                     alert('Failed to load channels. Check your M3U8 URL.');
                 }
             }
 
+            parsePlaylist(playlist) {
+                const lines = playlist.split('\n');
+                this.channels = [];
+                
+                let currentChannel = {};
+                for (const line of lines) {
+                    if (line.startsWith('#EXTINF')) {
+                        const params = line.split(',');
+                        const namePart = params.slice(1).join(',');
+                        currentChannel = {
+                            id: Math.random().toString(36).substr(2, 9),
+                            name: namePart.trim(),
+                            url: '' // Will be set from the next line
+                        };
+                    } else if (line.startsWith('http')) {
+                        currentChannel.url = line.trim();
+                        this.channels.push(currentChannel);
+                        currentChannel = {};
+                    }
+                }
+                
+                this.renderChannels();
+                
+                if (this.channels.length > 0) {
+                    this.playChannel(this.channels[0]);
+                }
+            }
+
             renderChannels() {
-                // Clear existing channels
                 this.channelList.innerHTML = '';
                 this.mobileChannelSelect.innerHTML = '<option value="">Select a channel</option>';
                 
-                // Group channels by group
-                const groups = {};
                 this.channels.forEach(channel => {
-                    if (!groups[channel.group]) {
-                        groups[channel.group] = [];
-                    }
-                    groups[channel.group].push(channel);
-                });
-                
-                // Render groups and channels
-                for (const [groupName, channels] of Object.entries(groups)) {
-                    // Desktop sidebar
-                    const groupElement = document.createElement('div');
-                    groupElement.className = 'mt-4 first:mt-0';
-                    groupElement.innerHTML = `
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-1">${groupName}</h3>
+                    const channelElement = document.createElement('div');
+                    channelElement.className = 'channel-item px-3 py-2 rounded-md flex items-center';
+                    channelElement.dataset.channelId = channel.id;
+                    channelElement.innerHTML = `
+                        <span>${channel.name}</span>
                     `;
-                    
-                                        const channelElements = channels.map(channel => {
-                        const channelElement = document.createElement('div');
-                        channelElement.className = 'channel-item px-3 py-2 rounded-md flex items-center';
-                        channelElement.dataset.channelId = channel.id;
-                        channelElement.innerHTML = `
-                            <img src="${channel.logo}" alt="Logo for ${channel.name}" class="w-8 h-8 rounded-full object-cover mr-3">
-                            <span>${channel.name}</span>
-                        `;
-                        channelElement.addEventListener('click', () => this.playChannel(channel));
-                        return channelElement;
-                    });
-                    
-                    channelElements.forEach(el => groupElement.appendChild(el));
-                    this.channelList.appendChild(groupElement);
-                    
-                    // Mobile dropdown
-                    channels.forEach(channel => {
-                        const option = document.createElement('option');
-                        option.value = channel.id;
-                        option.textContent = channel.name;
-                        this.mobileChannelSelect.appendChild(option);
-                    });
-                }
+                    channelElement.addEventListener('click', () => this.playChannel(channel));
+                    this.channelList.appendChild(channelElement);
+
+                    const option = document.createElement('option');
+                    option.value = channel.id;
+                    option.textContent = channel.name;
+                    this.mobileChannelSelect.appendChild(option);
+                });
             }
 
             playChannel(channel) {
                 this.currentChannel = channel;
-                
-                // Update UI
                 this.channelName.textContent = channel.name;
-                this.channelGroup.textContent = channel.group;
-                this.channelLogo.src = channel.logo;
-                this.channelLogo.alt = `Logo for ${channel.name}`;
-                this.channelDescription.textContent = channel.description;
-                
-                // Highlight selected channel
-                document.querySelectorAll('.channel-item').forEach(el => {
-                    el.classList.remove('active');
-                    if (el.dataset.channelId === channel.id) {
-                        el.classList.add('active');
-                    }
-                });
-                
-                // Set mobile select
-                this.mobileChannelSelect.value = channel.id;
-                
-                // Load stream
                 this.loadStream(channel.url);
             }
 
@@ -503,7 +458,7 @@
                     this.hls.attachMedia(this.videoPlayer);
                     this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
                         this.videoPlayer.play().catch(e => {
-                            console.error('Auto-play failed:', e);
+                                                       console.error('Auto-play failed:', e);
                             alert('Click the play button to start the stream');
                         });
                     });
@@ -548,4 +503,3 @@
     </script>
 </body>
 </html>
-
