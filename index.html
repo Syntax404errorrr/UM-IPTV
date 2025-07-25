@@ -207,12 +207,12 @@
                 if (!localStorage.getItem('users')) {
                     localStorage.setItem('users', JSON.stringify([]));
                 }
-                if (!localStorage.getItem('currentUser')) {
-                    localStorage.setItem('currentUser', JSON.stringify(null));
+                if (!localStorage.getItem('currentUser ')) {
+                    localStorage.setItem('currentUser ', JSON.stringify(null));
                 }
             }
 
-            registerUser(username, password) {
+            registerUser (username, password) {
                 const users = JSON.parse(localStorage.getItem('users'));
                 if (users.some(u => u.username === username)) {
                     return { success: false, message: 'Username already exists' };
@@ -222,23 +222,23 @@
                 return { success: true };
             }
 
-            loginUser(username, password) {
+            loginUser (username, password) {
                 const users = JSON.parse(localStorage.getItem('users'));
                 const user = users.find(u => u.username === username && u.password === password);
                 if (user) {
-                    localStorage.setItem('currentUser', JSON.stringify(username));
+                    localStorage.setItem('currentUser ', JSON.stringify(username));
                     return { success: true };
                 }
                 return { success: false, message: 'Invalid username or password' };
             }
 
-            logoutUser() {
-                localStorage.setItem('currentUser', JSON.stringify(null));
+            logoutUser () {
+                localStorage.setItem('currentUser ', JSON.stringify(null));
                 return { success: true };
             }
 
-            getCurrentUser() {
-                return JSON.parse(localStorage.getItem('currentUser'));
+            getCurrentUser () {
+                return JSON.parse(localStorage.getItem('currentUser '));
             }
         }
 
@@ -250,9 +250,8 @@
                 this.hls = null;
                 this.channels = [];
                 
-                // Initialize with your M3U8 playlist
-                // REPLACE THIS WITH YOUR ACTUAL M3U8 PLAYLIST URL
-                this.m3u8Url = "https://raw.githubusercontent.com/Syntax404errorrr/IPTVPH/refs/heads/main/local.m3u8?token=GHSAT0AAAAAADH6QXHGEWB2MK4BL77FVLZ22ECHHSA";
+                // Updated M3U8 playlist URL
+                this.m3u8Url = "https://raw.githubusercontent.com/Syntax404errorrr/IPTVPH/refs/heads/main/premium.m3u8?token=GHSAT0AAAAAADG2EVMKEGURJRX7I57RKON22ECZXTA";
                 
                 this.initElements();
                 this.bindEvents();
@@ -288,10 +287,10 @@
             }
 
             checkAuth() {
-                const currentUser = this.db.getCurrentUser();
-                if (currentUser) {
+                const currentUser  = this.db.getCurrentUser ();
+                if (currentUser ) {
                     this.showApp();
-                    this.userInfo.textContent = `Logged in as ${currentUser}`;
+                    this.userInfo.textContent = `Logged in as ${currentUser }`;
                     this.loadChannels();
                 } else {
                     this.showLogin();
@@ -321,7 +320,7 @@
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
 
-                const result = this.db.loginUser(username, password);
+                const result = this.db.loginUser (username, password);
                 if (result.success) {
                     this.showApp();
                     this.userInfo.textContent = `Logged in as ${username}`;
@@ -342,7 +341,7 @@
                     return;
                 }
 
-                const result = this.db.registerUser(username, password);
+                const result = this.db.registerUser (username, password);
                 if (result.success) {
                     alert('Registration successful. Please login.');
                     this.showLogin();
@@ -352,7 +351,7 @@
             }
 
             handleLogout() {
-                this.db.logoutUser();
+                this.db.logoutUser ();
                 location.reload();
             }
 
@@ -443,7 +442,7 @@
                         <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-1">${groupName}</h3>
                     `;
                     
-                    const channelElements = channels.map(channel => {
+                                        const channelElements = channels.map(channel => {
                         const channelElement = document.createElement('div');
                         channelElement.className = 'channel-item px-3 py-2 rounded-md flex items-center';
                         channelElement.dataset.channelId = channel.id;
